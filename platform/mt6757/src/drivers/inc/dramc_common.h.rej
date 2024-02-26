@@ -1,0 +1,11 @@
+--- platform/mt6757/src/drivers/inc/dramc_common.h
++++ platform/mt6757/src/drivers/inc/dramc_common.h
+@@ -138,7 +138,7 @@
+ 
+ #else  // preloader
+     #if defined(TARGET_BUILD_VARIANT_ENG) && !CFG_TEE_SUPPORT
+-    #if __ETT__
++#if 1 //__ETT__
+         #define mcSHOW_DBG_MSG(_x_)  print _x_
+     #else
+         #define mcSHOW_DBG_MSG(_x_)

@@ -1,0 +1,716 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein is
+ * confidential and proprietary to MediaTek Inc. and/or its licensors. Without
+ * the prior written permission of MediaTek inc. and/or its licensors, any
+ * reproduction, modification, use or disclosure of MediaTek Software, and
+ * information contained herein, in whole or in part, shall be strictly
+ * prohibited.
+ * 
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ * 
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER
+ * ON AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL
+ * WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR
+ * NONINFRINGEMENT. NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH
+ * RESPECT TO THE SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY,
+ * INCORPORATED IN, OR SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES
+ * TO LOOK ONLY TO SUCH THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO.
+ * RECEIVER EXPRESSLY ACKNOWLEDGES THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO
+ * OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES CONTAINED IN MEDIATEK
+ * SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK SOFTWARE
+ * RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S
+ * ENTIRE AND CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE
+ * RELEASED HEREUNDER WILL BE, AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE
+ * MEDIATEK SOFTWARE AT ISSUE, OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE
+ * CHARGE PAID BY RECEIVER TO MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ *
+ * The following software/firmware and/or related documentation ("MediaTek
+ * Software") have been modified by MediaTek Inc. All revisions are subject to
+ * any receiver's applicable license agreements with MediaTek Inc.
+ */
+
+/******************************************************************************
+*
+*  Copyright Statement:
+*  --------------------
+*  This software is protected by Copyright and the information contained
+*  herein is confidential. The software may not be copied and the information
+*  contained herein may not be used or disclosed except with the written
+*  permission of MediaTek Inc. (C) 2001
+*
+*******************************************************************************/
+#include "typedefs.h"
+#include "nand_core.h"
+#include "nand.h"
+#include "platform.h"
+#include "partition.h"
+#include "dram_buffer.h"
+#include "pmt.h"
+
+#if CFG_PMT_SUPPORT
+
+//#ifdef PAGE_4K
+//#define LPAGE 2048
+//char page_buf[LPAGE+64];
+//char page_readbuf[LPAGE];
+//#else
+//#define LPAGE 8192
+//char page_buf[LPAGE+640];
+#define page_buf g_dram_buf->pmt_dat_buf
+#define page_readbuf g_dram_buf->pmt_read_buf
+//char page_readbuf[LPAGE];
+//#endif
+extern unsigned char g_nand_spare[128];
+extern struct nand_chip g_nand_chip;
+
+static u64 total_size;
+static pt_info pi;
+static u8 sig_buf[PT_SIG_SIZE];
+bool init_pmt_done = FALSE;
+
+static u32 part_seccfg_offset = 0;
+static u32 part_seccfg_length = 0;
+static u32 part_secro_offset = 0;
+static u32 part_secro_length = 0;
+
+//pt_resident old_part[PART_MAX_COUNT];
+extern flashdev_info devinfo;
+
+#define new_part g_dram_buf->new_part
+#define lastest_part g_dram_buf->lastest_part
+static part_t tempart;
+
+#if defined(MTK_TLC_NAND_SUPPORT)
+extern u32 slc_ratio;
+extern u32 sys_slc_ratio;
+extern u32 usr_slc_ratio;
+#endif
+#define PMT_POOL_SIZE	(2)
+
+
+#ifdef MTK_EMMC_SUPPORT
+#define CFG_EMMC_PMT_SIZE 0xc00000
+extern u64 g_emmc_size;
+pt_resident32 lastest_part32[PART_MAX_COUNT];
+static int load_pt_from_fixed_addr(u8 *buf);
+static u32 page_size=512;
+static inline u32 PAGE_NUM (u64 logical_size)
+{
+        return ((u64) (logical_size) / page_size);
+}
+
+#else
+u32 block_size;
+u32 page_size;
+static inline u64 PAGE_NUM(u64 logical_size)
+{
+	return ((unsigned long long) (logical_size) / page_size);
+}
+extern int new_part_tab(u8 *buf);
+extern int update_part_tab(void);
+
+extern int mtk_nand_write_page_hwecc(u64 logical_addr, char *buf);
+extern int mtk_nand_read_page_hwecc(u64 logical_addr, char *buf);
+
+#endif
+extern int load_exist_part_tab(u8 *buf);
+
+
+//DM_PARTITION_INFO_PACKET dm;  //for test
+#if 0
+void get_part_tab_from_complier(void)
+{
+	int index=0;
+	part_t *part = cust_part_tbl();
+	MSG (INIT, "get_pt_from_complier \n");
+	while(part->flags!= PART_FLAG_END)
+	{
+    		
+		memcpy(lastest_part[index].name, part->name, MAX_PARTITION_NAME_LEN);
+		lastest_part[index].size = (u64)part->blks * page_size;
+		lastest_part[index].offset = (u64)part->startblk * page_size;
+		lastest_part[index].mask_flags = PART_FLAG_NONE;  //this flag in kernel should be fufilled even though in flash is 0.
+		MSG (INIT, "get_ptr  %s %llx \n",lastest_part[index].name,lastest_part[index].offset);
+		index++; 
+		if(index == PART_MAX_COUNT)
+			break;
+		part++;
+	}
+}
+#endif
+void pmt_init(void)
+{
+    int ret = 0;
+    int i = 0;
+	part_t *part = cust_part_tbl();
+
+    memset(&new_part,0, PART_MAX_COUNT * sizeof(pt_resident));
+    memset(&lastest_part,0, PART_MAX_COUNT * sizeof(pt_resident));
+
+    ret = load_exist_part_tab((u8 *)&lastest_part);
+    //ret == ERR_NO_EXIST;
+    if (ret == ERR_NO_EXIST) { //first run preloader before dowload
+        //and valid mirror last download or first download 
+        //get_part_tab_from_complier(); //get from complier
+    } else {
+        print("find pt\n");
+        for (i = 0; i < PART_MAX_COUNT; i++,part++) {  
+			if(!strcmp(lastest_part[i-1].name,"BMTPOOL"))
+				break;
+			part->name = lastest_part[i].name;
+			part->size= lastest_part[i].size;
+			part->blks = lastest_part[i].size / page_size;
+			
+			if(!strcmp(lastest_part[i].name,"BMTPOOL"))
+			{
+				lastest_part[i].offset = g_nand_chip.chipsize + PMT_POOL_SIZE * (devinfo.blocksize * 1024);
+				#if defined(MTK_TLC_NAND_SUPPORT)
+			    if(devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+			    {
+			        if(devinfo.tlcControl.normaltlc)
+			        {
+			        	lastest_part[i].part_id = REGION_SLC_MODE;
+			        }
+					else
+						lastest_part[i].part_id = REGION_TLC_MODE;
+			    }    
+				#endif
+			}
+			
+		 	part->startblk =lastest_part[i].offset / page_size;
+			part->flags = PART_FLAG_NONE;
+			//if(lastest_part[i].size+lastest_part[i].offset == lastest_part[i+1].offset)
+			if(lastest_part[i].part_id == REGION_LOW_PAGE)
+			{
+				part->type = TYPE_LOW;
+			}
+			#if defined(MTK_TLC_NAND_SUPPORT)
+			else if(lastest_part[i].part_id == REGION_SLC_MODE)
+			{
+			    part->type = TYPE_SLC;
+			}
+			else if(lastest_part[i].part_id == REGION_TLC_MODE)
+			{
+			    part->type = TYPE_TLC;
+			}
+			#endif
+			else
+			{
+				part->type = TYPE_FULL;
+			}
+			if(!strcmp(lastest_part[i].name, PART_SECCFG))
+			{
+				part_seccfg_offset = lastest_part[i].offset;
+				part_seccfg_length = lastest_part[i].size;
+			}
+			if(!strcmp(lastest_part[i].name, PART_SEC_RO))
+			{
+				part_secro_offset = lastest_part[i].offset;
+				part_secro_length = lastest_part[i].size;
+			}
+            print("part %s size %llx %llx\n", lastest_part[i].name, 
+                lastest_part[i].offset, lastest_part[i].size);
+        }
+    }
+	init_pmt_done = TRUE;
+}
+#if 0
+u32 get_seccfg_offset(void)
+{
+	return part_seccfg_offset;
+}
+
+u32 get_seccfg_size(void)
+{
+	return part_seccfg_length;
+}
+
+u32 get_secro_offset(void)
+{
+	return part_secro_offset;
+}
+
+u32 get_secro_length(void)
+{
+	return part_secro_length;
+}
+#endif
+part_t *pmt_get_part(part_t *part, int index)
+{
+    if (index >= PART_MAX_COUNT)
+        return NULL;
+
+    tempart.name=part->name;
+    //when download get partitin used new,orther wise used latest
+    if (new_part[0].size != 0) {
+        tempart.startblk = PAGE_NUM(new_part[index].offset);
+        tempart.blks=PAGE_NUM(new_part[index].size);
+    } else {
+        tempart.startblk = PAGE_NUM(lastest_part[index].offset);
+        tempart.blks=PAGE_NUM(lastest_part[index].size);
+    }
+    //tempart.flags=part->flags;//marked by xiaolei
+    tempart.size=part->size;
+    return &tempart;
+}
+
+u64 part_get_startaddress(u64 byte_address)
+{
+    int index = 0;
+	if(TRUE == init_pmt_done)
+	{
+    while (index < PART_MAX_COUNT) {
+		if(lastest_part[index].offset > byte_address || lastest_part[index].size == 0)
+			return lastest_part[index-1].offset;
+        index++;
+    }
+	}
+    return byte_address;
+}
+
+
+#ifndef MTK_EMMC_SUPPORT
+extern unsigned char g_nand_spare[];
+int find_empty_page_from_top(u64 start_addr)
+{
+	int page_offset;
+	u64 current_add;
+	int i;
+	memset(page_buf,0xFF,page_size);
+	//mtk_nand_erase(start_addr); //for test
+	for(page_offset=0;page_offset<(block_size/page_size);page_offset++)
+	{
+		current_add = start_addr+(page_offset*page_size);
+		if(!mtk_nand_read_page_hwecc(current_add, page_readbuf))
+		{
+			MSG (INIT, "find_emp read failed %llx \n",current_add);
+			continue;
+		}
+		else
+		{
+			if(memcmp(page_readbuf, page_buf,page_size)||memcmp(g_nand_spare,page_buf,32))
+			{       
+				continue;
+			}
+			else
+			{
+				MSG (INIT, "find_emp  at %x \n",page_offset);
+				break;
+			}
+			
+		}
+	}
+	MSG (INIT, "find_emp at %x \n",page_offset);
+	if(page_offset==(block_size/page_size))
+	{
+		MSG (INIT, "no empty \n");
+		if(!mtk_nand_erase(start_addr)) 
+		{//no good block for used in replace pool
+			MSG (INIT, "erase mirror failed %x\n",start_addr);
+			pi.mirror_pt_has_space=0;
+			return 0xFFFF;
+		}
+		else
+		{
+			return 0; //the first page is empty
+		}
+	}
+	else
+	{
+		return page_offset;
+	}
+}
+
+
+bool find_mirror_pt_from_bottom(u64 *start_addr)
+{
+	int mpt_locate;
+	u64 mpt_start_addr= total_size +block_size;//MPT_LOCATION*BLOCK_SIZE-page_size;
+	u64 current_start_addr=0;
+	char pmt_spare[4];
+	
+	for(mpt_locate=(block_size/page_size);mpt_locate>0;mpt_locate--)
+	{
+		memset(pmt_spare,0xFF,PT_SIG_SIZE);
+		memset(g_nand_spare,0xFF,64);
+		current_start_addr = mpt_start_addr+mpt_locate*page_size;
+		if(!mtk_nand_read_page_hwecc(current_start_addr, page_readbuf))
+		{
+			MSG (INIT, "find_mirror read failed %llx %x \n",current_start_addr,mpt_locate);
+		}
+		memcpy(pmt_spare,&g_nand_spare[1] ,PT_SIG_SIZE);
+		//need enhance must be the larget sequnce number
+		#if 0
+		{
+			int i;
+			for(i=0;i<4;i++)
+			MSG (INIT, " %x %x \n",page_readbuf[i],g_nand_spare[1+i]);	
+			MSG (INIT,"%x %x " , *((u32*)page_readbuf), *((u32*)pmt_spare));
+			MSG (INIT,"%x " , is_valid_mpt(page_readbuf));
+			MSG (INIT,"%x \n" , is_valid_mpt(pmt_spare));
+		}
+		#endif
+		#if defined(MTK_TLC_NAND_SUPPORT)
+		if(is_valid_mpt(page_readbuf))
+		#else
+		if(is_valid_mpt(page_readbuf)&&is_valid_mpt(&pmt_spare))
+		#endif
+		{
+		      //if no pt, pt.has space is 0;
+		    #if defined(MTK_TLC_NAND_SUPPORT)
+        	slc_ratio = *((u32 *)page_readbuf + 1);//slc ratio
+        	sys_slc_ratio = (slc_ratio >> 16)&0xFF;
+        	usr_slc_ratio = (slc_ratio)&0xFF;
+        	MSG(INIT, "[pl] slc ratio %d\n",slc_ratio);
+        	#endif
+			pi.sequencenumber =  g_nand_spare[5];
+			MSG (INIT, "find valid pt at %llx sq %x \n",current_start_addr, pi.sequencenumber);
+			break;
+		}
+		else
+		{
+			continue;
+		}
+	}
+	if(mpt_locate==0)
+	{
+		MSG (INIT, "no valid mirror page\n");
+		pi.sequencenumber =  0;
+		return FALSE;
+	}
+	else
+	{
+		*start_addr = current_start_addr;
+		return TRUE;
+	}
+}
+#endif
+
+int load_exist_part_tab(u8 *buf)
+{
+	u64 pt_start_addr;
+	u64 pt_cur_addr;
+	int pt_locate;
+	int reval=DM_ERR_OK;
+	u64 mirror_address;
+	char pmt_spare[PT_SIG_SIZE];
+
+	#if defined(MTK_TLC_NAND_SUPPORT)
+	if((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+	   && (devinfo.tlcControl.normaltlc))
+	    block_size = devinfo.blocksize * 1024 / 3; // SLC MODE
+	else
+	#endif
+	{
+	    block_size = devinfo.blocksize * 1024;
+	}
+	page_size = (u32) g_nand_chip.page_size;
+	total_size = (u64)(g_nand_chip.chipsize);
+
+	pt_start_addr = total_size;
+
+	MSG (INIT, "load_pt from %llx\n",pt_start_addr);
+	memset(&pi,0xFF,sizeof(pi));
+	for(pt_locate=0;pt_locate<(block_size/page_size);pt_locate++)
+	{
+		pt_cur_addr = pt_start_addr+pt_locate*page_size;
+		memset(pmt_spare,0xFF,PT_SIG_SIZE);
+		memset(g_nand_spare,0xFF,64);
+		if(!mtk_nand_read_page_hwecc(pt_cur_addr, page_readbuf))
+		{
+			MSG (INIT, "read pt failded\n");
+		}
+		memcpy(pmt_spare,&g_nand_spare[1] ,PT_SIG_SIZE);
+		MSG (INIT, "read pt main %x %x %x %x\n",page_readbuf[0],page_readbuf[1],page_readbuf[2],page_readbuf[3]);
+		MSG (INIT, "read pt spare %x %x %x %x\n",pmt_spare[0],pmt_spare[1],pmt_spare[2],pmt_spare[3]);
+		#if defined(MTK_TLC_NAND_SUPPORT)
+		if(is_valid_pt(page_readbuf))
+		#else
+		if(is_valid_pt(page_readbuf)&&is_valid_pt(pmt_spare))
+		#endif
+		{
+		    #if defined(MTK_TLC_NAND_SUPPORT)
+        	slc_ratio = *((u32 *)page_readbuf + 1);//slc ratio
+        	sys_slc_ratio = (slc_ratio >> 16)&0xFF;
+        	usr_slc_ratio = (slc_ratio)&0xFF;
+        	MSG (INIT, "[pl] slc ratio %d\n",slc_ratio);
+        	#endif
+			pi.sequencenumber = g_nand_spare[5];
+			MSG (INIT, "find valid pt at %llx sq %x \n",pt_start_addr,pi.sequencenumber);
+			break;
+		}
+		else
+		{
+			continue;
+		}
+	}
+
+	if(pt_locate==(block_size/page_size))
+	{
+		//first download or download is not compelte after erase or can not download last time
+		MSG (INIT, "find pt failed \n");
+		pi.pt_has_space = 0; //or before download pt power lost
+		
+		if(!find_mirror_pt_from_bottom(&mirror_address))
+		{
+			MSG (INIT, "First time download \n");
+			reval=ERR_NO_EXIST;
+			return reval;
+		}
+		else
+		{
+			//used the last valid mirror pt, at lease one is valid.
+			mtk_nand_read_page_hwecc(mirror_address, page_readbuf);
+		}
+	}
+	memcpy(buf,&page_readbuf[PT_SIG_SIZE],sizeof(lastest_part));
+
+	return reval;
+}
+#ifndef MTK_EMMC_SUPPORT
+int new_part_tab(u8 *buf)
+{
+	DM_PARTITION_INFO_PACKET  *dm_part= (DM_PARTITION_INFO_PACKET *)buf;
+	int part_num,change_index,i;
+	int retval;
+	int pageoffset;
+	u64 start_addr=total_size+block_size;
+	u64 current_addr=0;
+	
+	pi.pt_changed =0;
+	pi.tool_or_sd_update = 1;
+
+	MSG (INIT, "new_pt enter \n");
+	//the first image is ?
+	
+	for(part_num=0;part_num<PART_MAX_COUNT;part_num++)
+	{
+		memcpy(new_part[part_num].name,dm_part->part_info[part_num].part_name,MAX_PARTITION_NAME_LEN);
+		new_part[part_num].offset=dm_part->part_info[part_num].start_addr;
+		new_part[part_num].size=dm_part->part_info[part_num].part_len;
+		new_part[part_num].mask_flags=0;
+		//MSG (INIT, "DM_PARTITION_INFO_PACKET %s size %x %x \n",dm_part->part_info[part_num].part_name,dm_part->part_info[part_num].part_len,part_num);
+		MSG (INIT, "new_pt %s size %x \n",new_part[part_num].name,new_part[part_num].size);
+		if(dm_part->part_info[part_num].part_len ==0)
+		{
+			MSG (INIT, "new_pt last %x \n",part_num);
+			break;
+		}
+	}
+	MSG (INIT, "par_nub %x \n",part_num);
+	#if 1
+	//++++++++++for test
+	#if 0
+	part_num=13;
+	memcpy(&new_part[0],&lastest_part[0],sizeof(new_part));
+	MSG (INIT, "new_part  %x size  \n",sizeof(new_part));
+	for(i=0;i<part_num;i++)
+	{
+		MSG (INIT, "npt partition %s size  \n",new_part[i].name);
+		//MSG (INIT, "npt %x size  \n",new_part[i].offset);
+		//MSG (INIT, "npt %x size  \n",lastest_part[i].offset);
+		//MSG (INIT, "npt %x size  \n",new_part[i].size);
+		dm_part->part_info[5].part_visibility =1;
+		dm_part->part_info[5].dl_selected =1;
+		new_part[5].size = lastest_part[5].size+0x100000;
+	}
+	#endif
+	//------------for test
+	//Find the first changed partition, whether is visible
+	for(change_index=0;change_index<=part_num;change_index++)
+	{
+		if((new_part[change_index].size!=lastest_part[change_index].size)||(new_part[change_index].offset!=lastest_part[change_index].offset))
+		{
+			MSG (INIT, "new_pt %x size changed from %x to %x\n",change_index,lastest_part[change_index].size,new_part[change_index].size);
+			pi.pt_changed =1;
+			break;
+		}
+	}
+
+      if(pi.pt_changed==1)
+      	{
+		//Is valid image update
+		for(i=change_index;i<=part_num;i++)
+		{
+			if(dm_part->part_info[i].dl_selected==0&&dm_part->part_info[i].part_visibility==1)
+			{
+				
+				MSG (INIT, "Full download is need %x \n",i);
+				retval=DM_ERR_NO_VALID_TABLE;
+				return retval;
+			}
+		}
+
+		pageoffset=find_empty_page_from_top(start_addr);
+		//download partition used the new partition
+		//write mirror at the same 2 page
+		memset(page_buf,0xFF,page_size+64);
+		#if defined(MTK_TLC_NAND_SUPPORT)
+		*(u64 *)sig_buf = MPT_SIG | (slc_ratio << 32);
+		#else
+		*(int *)sig_buf = MPT_SIG;
+		#endif
+		memcpy(page_buf,&sig_buf,PT_SIG_SIZE);
+		memcpy(&page_buf[PT_SIG_SIZE],&new_part[0],sizeof(new_part));		
+		memcpy(&page_buf[page_size],&sig_buf,PT_SIG_SIZE);
+		pi.sequencenumber+=1;
+		memcpy(&page_buf[page_size+PT_SIG_SIZE],&pi,PT_SIG_SIZE);
+		#if 0
+             for(i=0;i<8;i++)
+             {
+             	MSG (INIT, "%x\n",page_buf[i]);
+             }	
+		#endif	 
+		if(pageoffset!=0xFFFF)                                                      
+		{
+			if((pageoffset%2)!=0)
+			{
+				MSG (INIT, "mirror block may destroy last time%x\n",pageoffset);
+				pageoffset+=1;	
+			}
+			for(i=0;i<2;i++)
+			{
+				current_addr=start_addr+(pageoffset+i)*page_size;
+				if(!mtk_nand_write_page_hwecc(current_addr, page_buf))
+				{
+					MSG (INIT, "write first page failed %llx\n",current_addr);
+				}
+				else
+				{
+					MSG (INIT, "w_mpt at %llx\n",current_addr);
+					//read back verify
+					if((!mtk_nand_read_page_hwecc(current_addr, page_readbuf))||memcmp(page_buf,page_readbuf,page_size))
+					{
+						MSG (INIT, "read or verify first mirror page failed %llx \n",current_addr);
+						memcpy(page_buf,0,PT_SIG_SIZE);
+						if(mtk_nand_write_page_hwecc(current_addr,page_buf))
+						{
+							MSG (INIT, "mark failed %llx\n",current_addr);
+						}		
+					}
+					else
+					{
+						MSG (INIT, "w_mpt ok %x\n",i);
+						//any one success set this flag?
+						pi.mirror_pt_dl=1;
+					}
+				}
+			}
+	      	}
+	}
+	else
+	{
+		MSG (INIT, "new_part_tab no pt change %x\n",i);
+	}
+#endif	
+	retval=DM_ERR_OK;
+//for test
+//	retval=DM_ERR_NO_VALID_TABLE;
+	return retval;
+}
+
+
+int update_part_tab(void)
+{
+	int retval=0;
+	int retry_w;
+	int retry_r;
+	u64 start_addr=total_size;
+	u64 current_addr=0;
+	//for test
+     // return DM_ERR_NO_SPACE_FOUND;
+	memset(page_buf,0xFF,page_size+64);
+	if((pi.pt_changed==1||pi.pt_has_space==0)&&pi.tool_or_sd_update== 1)
+	{	
+		MSG (INIT, "update_pt pt changes\n");
+
+		if(!mtk_nand_erase(start_addr)) 
+		{//no good block for used in replace pool
+			MSG (INIT, "erase failed %llx\n",start_addr);
+			if(pi.mirror_pt_dl==0)
+			retval = DM_ERR_NO_SPACE_FOUND;
+			return retval;
+		}
+
+		for(retry_r=0;retry_r<RETRY_TIMES;retry_r++)
+		{
+			for(retry_w=0;retry_w<RETRY_TIMES;retry_w++)
+			{
+				current_addr = start_addr+(retry_w+retry_r*RETRY_TIMES)*page_size;
+				#if defined(MTK_TLC_NAND_SUPPORT)
+				*(u64 *)sig_buf = PT_SIG | (slc_ratio << 32);
+				#else
+				*(int *)sig_buf = PT_SIG;
+				#endif
+				memcpy(page_buf,&sig_buf,PT_SIG_SIZE);
+				memcpy(&page_buf[PT_SIG_SIZE],&new_part[0],sizeof(new_part));		
+				memcpy(&page_buf[page_size],&sig_buf,PT_SIG_SIZE);
+				memcpy(&page_buf[page_size+PT_SIG_SIZE],&pi,PT_SIG_SIZE);
+				
+				if(!mtk_nand_write_page_hwecc(current_addr, page_buf))
+				{//no good block for used in replace pool . still used the original ones
+					MSG (INIT, "write failed %x\n",retry_w);
+					memset(page_buf,0,PT_SIG_SIZE);
+					if(!mtk_nand_write_page_hwecc(current_addr, page_buf))
+					{
+						MSG (INIT, "write err mark failed\n");
+						//continue retry
+						continue;
+					}		
+				}
+				else
+				{
+					MSG (INIT, "write pt success %llx %x \n",current_addr,retry_w);
+					break; // retry_w should not count.
+				}
+			}
+			if(retry_w==RETRY_TIMES)
+			{
+				MSG (INIT, "retry w failed\n");
+				if(pi.mirror_pt_dl==0)//mirror also can not write down
+				{
+					retval = DM_ERR_NO_SPACE_FOUND;
+					return retval;
+				}
+				else
+				{
+					return DM_ERR_OK;
+				}
+			}
+			current_addr = (start_addr+(((retry_w)+retry_r*RETRY_TIMES)*page_size));
+			if(!mtk_nand_read_page_hwecc(current_addr, page_readbuf)||memcmp(page_buf,page_readbuf,page_size))
+			{
+				
+				MSG (INIT, "v or r failed %x\n",retry_r);
+				memset(page_buf,0,PT_SIG_SIZE);
+				if(!mtk_nand_write_page_hwecc(current_addr,page_buf))
+				{
+					MSG (INIT, "read err mark failed\n");
+					//continue retryp
+					continue;
+				}
+
+			}
+			else
+			{
+				MSG (INIT, "r&v ok%llx\n",current_addr);
+				break;
+			}
+		}		
+	}
+	else
+	{
+		MSG (INIT, "no change \n");
+	}
+	
+	return DM_ERR_OK;
+
+}
+#endif
+#endif

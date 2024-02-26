@@ -1,0 +1,182 @@
+<efuse_writer chip="6755" output_bin_size="512">
+	<definitions>
+		<!-- Inner Value declaration-->
+		<inner_value tag="magic-key" attribute="key1">
+			<require length="8" />
+			<suppress_log />
+		</inner_value>
+		<inner_value tag="magic-key" attribute="key2">
+			<require length="8" />
+			<suppress_log />
+		</inner_value>
+		<inner_value tag="usb-id" attribute="vid">
+			<require length="4" />
+		</inner_value>
+		<inner_value tag="usb-id" attribute="pid">
+			<require length="4" />
+		</inner_value>
+
+		<!-- Inner Text declaration-->
+		<inner_text tag="c_data_0">
+			<require length="16" />
+		</inner_text>
+		<inner_text tag="c_data_1">
+			<require length="16" />
+		</inner_text>
+		<inner_text tag="ac-key">
+			<require length="32" />
+		</inner_text>
+		<inner_text tag="c_ctrl1">
+			<require length="4" />
+			<require valid_start_bit="0" valid_end_bit="13" />
+		</inner_text>
+
+		<!-- Boolean declaration-->
+		<boolean tag="common-ctrl" attribute="Disable_NAND_boot_speedup" />
+		<boolean tag="common-ctrl" attribute="USB_download_type" />
+		<boolean tag="common-ctrl" attribute="Disable_NAND_boot" />
+		<boolean tag="common-ctrl" attribute="Disable_EMMC_boot" />
+
+		<boolean tag="secure-ctrl" attribute="Enable_SW_JTAG_CON" />
+		<boolean tag="secure-ctrl" attribute="Enable_Root_Cert" />
+		<boolean tag="secure-ctrl" attribute="Enable_ACC" />
+		<boolean tag="secure-ctrl" attribute="Enable_ACK" />
+		<boolean tag="secure-ctrl" attribute="Enable_SLA" />
+		<boolean tag="secure-ctrl" attribute="Enable_DAA" />
+		<boolean tag="secure-ctrl" attribute="Enable_SBC" />
+		<boolean tag="secure-ctrl" attribute="Disable_JTAG" />
+		<boolean tag="secure-ctrl" attribute="Disable_DBGPORT_LOCK" />
+
+		<boolean tag="c_ctrl_0" attribute="c2k_sbc_en" />
+		<boolean tag="c_ctrl_0" attribute="md1_sbc_en" />
+		<boolean tag="c_ctrl_0" attribute="disable_self_blow" />
+
+		<boolean tag="c_lock" attribute="c_ctrl1_lock" />
+		<boolean tag="c_lock" attribute="c_ctrl0_lock" />
+		<boolean tag="c_lock" attribute="c_data1_lock" />
+		<boolean tag="c_lock" attribute="c_data0_lock" />
+
+		<boolean tag="common-lock" attribute="com_ctrl_lock" />
+		<boolean tag="common-lock" attribute="usb_id_lock" />
+
+		<boolean tag="secure-lock" attribute="sbc_pubk_hash_lock" />
+		<boolean tag="secure-lock" attribute="ackey_lock" />
+		<boolean tag="secure-lock" attribute="sec_attr_lock" />
+	</definitions>
+	<blow_list>
+		<efuse offset="0x0" type="inner_value">
+			<input tag="magic-key" attribute="key1" />
+		</efuse>
+		<efuse offset="0x4" type="inner_value">
+			<input tag="magic-key" attribute="key2" />
+		</efuse>
+
+		<efuse offset="0xC" type="inner_text">
+			<input tag="ac-key" start_index="0" end_index="7" />
+		</efuse>
+		<efuse offset="0x10" type="inner_text">
+			<input tag="ac-key" start_index="8" end_index="15" />
+		</efuse>
+		<efuse offset="0x14" type="inner_text">
+			<input tag="ac-key" start_index="16" end_index="23" />
+		</efuse>
+		<efuse offset="0x18" type="inner_text">
+			<input tag="ac-key" start_index="24" end_index="31" />
+		</efuse>
+
+		<efuse offset="0x1C" type="external">
+			<input key="SBC_PUBK_HASH" start_index="0" end_index="7" />
+		</efuse>
+		<efuse offset="0x20" type="external">
+			<input key="SBC_PUBK_HASH" start_index="8" end_index="15" />
+		</efuse>
+		<efuse offset="0x24" type="external">
+			<input key="SBC_PUBK_HASH" start_index="16" end_index="23" />
+		</efuse>
+		<efuse offset="0x28" type="external">
+			<input key="SBC_PUBK_HASH" start_index="24" end_index="31" />
+		</efuse>
+		<efuse offset="0x2C" type="external">
+			<input key="SBC_PUBK_HASH" start_index="32" end_index="39" />
+		</efuse>
+		<efuse offset="0x30" type="external">
+			<input key="SBC_PUBK_HASH" start_index="40" end_index="47" />
+		</efuse>
+		<efuse offset="0x34" type="external">
+			<input key="SBC_PUBK_HASH" start_index="48" end_index="55" />
+		</efuse>
+		<efuse offset="0x38" type="external">
+			<input key="SBC_PUBK_HASH" start_index="56" end_index="63" />
+		</efuse>
+
+		<!-- usb-vid and usb-pid are special cases. They need to be reversed! -->
+		<efuse offset="0x3C" type="inner_value">
+			<input tag="usb-id" attribute="pid" reverse_endian="true" />
+		</efuse>
+		<!-- usb-vid and usb-pid are special cases. They need to be reversed! -->
+		<efuse offset="0x40" type="inner_value">
+			<input tag="usb-id" attribute="vid" reverse_endian="true" />
+		</efuse>
+
+		<efuse offset="0x44" type="inner_text">
+			<input tag="c_data_0" start_index="0" end_index="7" />
+		</efuse>
+		<efuse offset="0x48" type="inner_text">
+			<input tag="c_data_0" start_index="8" end_index="15" />
+		</efuse>
+		<efuse offset="0x4C" type="inner_text">
+			<input tag="c_data_1" start_index="0" end_index="7" />
+		</efuse>
+		<efuse offset="0x50" type="inner_text">
+			<input tag="c_data_1" start_index="8" end_index="15" />
+		</efuse>
+
+		<efuse offset="0x54" type="boolean">
+			<input bit="0" tag="common-ctrl" attribute="Disable_EMMC_boot" />
+			<input bit="1" tag="common-ctrl" attribute="Disable_NAND_boot" />
+			<input bit="2" tag="common-ctrl" attribute="USB_download_type" />
+			<input bit="4" tag="common-ctrl" attribute="Disable_NAND_boot_speedup" />
+		</efuse>
+
+		<efuse offset="0x58" type="boolean">
+			<input bit="0" tag="secure-ctrl" attribute="Disable_JTAG" />
+			<input bit="1" tag="secure-ctrl" attribute="Enable_SBC" />
+			<input bit="2" tag="secure-ctrl" attribute="Enable_DAA" />
+			<input bit="3" tag="secure-ctrl" attribute="Enable_SLA" />
+			<input bit="4" tag="secure-ctrl" attribute="Enable_ACK" />
+			<input bit="5" tag="secure-ctrl" attribute="Enable_ACC" />
+			<input bit="6" tag="secure-ctrl" attribute="Enable_SW_JTAG_CON" />
+			<input bit="7" tag="secure-ctrl" attribute="Enable_Root_Cert" />
+			<input bit="9" tag="secure-ctrl" attribute="Disable_DBGPORT_LOCK" />
+		</efuse>
+
+		<efuse offset="0x5C" type="inner_text">
+			<input tag="c_ctrl1" />
+		</efuse>
+
+		<efuse offset="0x60" type="boolean">
+			<input bit="0" tag="c_ctrl_0" attribute="c2k_sbc_en" />
+			<input bit="1" tag="c_ctrl_0" attribute="md1_sbc_en" />
+			<input bit="2" tag="c_ctrl_0" attribute="disable_self_blow" />
+		</efuse>
+
+		<efuse offset="0x64" type="boolean">
+			<input bit="0" tag="c_lock" attribute="c_data0_lock" />
+			<input bit="1" tag="c_lock" attribute="c_data1_lock" />
+			<input bit="4" tag="c_lock" attribute="c_ctrl0_lock" />
+			<input bit="5" tag="c_lock" attribute="c_ctrl1_lock" />
+		</efuse>
+
+		<efuse offset="0x68" type="boolean">
+			<input bit="0" tag="secure-lock" attribute="sbc_pubk_hash_lock" />
+			<input bit="1" tag="secure-lock" attribute="ackey_lock" />
+			<input bit="2" tag="secure-lock" attribute="sec_attr_lock" />
+		</efuse>
+
+		<efuse offset="0x6C" type="boolean">
+			<input bit="1" tag="common-lock" attribute="usb_id_lock" />
+			<input bit="2" tag="common-lock" attribute="com_ctrl_lock" />
+		</efuse>
+
+	</blow_list>
+</efuse_writer>

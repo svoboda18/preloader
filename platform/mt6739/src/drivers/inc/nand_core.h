@@ -1,0 +1,862 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein is
+ * confidential and proprietary to MediaTek Inc. and/or its licensors. Without
+ * the prior written permission of MediaTek inc. and/or its licensors, any
+ * reproduction, modification, use or disclosure of MediaTek Software, and
+ * information contained herein, in whole or in part, shall be strictly
+ * prohibited.
+ * 
+ * MediaTek Inc. (C) 2012. All rights reserved.
+ * 
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER
+ * ON AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL
+ * WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR
+ * NONINFRINGEMENT. NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH
+ * RESPECT TO THE SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY,
+ * INCORPORATED IN, OR SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES
+ * TO LOOK ONLY TO SUCH THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO.
+ * RECEIVER EXPRESSLY ACKNOWLEDGES THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO
+ * OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES CONTAINED IN MEDIATEK
+ * SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK SOFTWARE
+ * RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S
+ * ENTIRE AND CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE
+ * RELEASED HEREUNDER WILL BE, AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE
+ * MEDIATEK SOFTWARE AT ISSUE, OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE
+ * CHARGE PAID BY RECEIVER TO MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ *
+ * The following software/firmware and/or related documentation ("MediaTek
+ * Software") have been modified by MediaTek Inc. All revisions are subject to
+ * any receiver's applicable license agreements with MediaTek Inc.
+ */
+
+#ifndef _MTK_NAND_CORE_H
+#define _MTK_NAND_CORE_H
+
+#include "typedefs.h"
+#include "boot_device.h"
+#if (CFG_BOOT_DEV == BOOTDEV_NAND)
+#include "nand_device_list.h"
+#endif
+
+#define CHIPVER_ECO_1               (0x8a00)
+#define CHIPVER_ECO_2               (0x8a01)
+
+/**************************************************************************
+*  SIZE DEFINITION
+**************************************************************************/
+#define NFI_BUF_MAX_SIZE             (0x10000)
+
+/**************************************************************************
+ * Buffer address define for NAND modules
+ *************************************************************************/
+#define MAX_MAIN_SIZE                (0x4000)
+#define MAX_SPAR_SIZE                (0x640)
+
+#define BMT_DAT_BUFFER              bmt_dat_buf
+#define BMT_DAT_BUFFER_SIZE         (MAX_MAIN_SIZE + MAX_SPAR_SIZE)
+
+#define PMT_DAT_BUFFER              pmt_dat_buf
+#define PMT_DAT_BUFFER_SIZE         (MAX_MAIN_SIZE + MAX_SPAR_SIZE)
+
+#define PMT_READ_BUFFER             pmt_read_buf
+#define PMT_READ_BUFFER_SIZE        (MAX_MAIN_SIZE)
+
+#define NAND_NFI_BUFFER_SIZE        (NFI_BUF_MAX_SIZE)
+
+#define NFI_TMP_SRAM_BUFFER_SIZE    (0x1200)
+#define NFI_BMT_SRAM_BUFFER_SIZE    (540)
+
+/******************************************************************************
+*
+* NFI & ECC Configuration
+*
+*******************************************************************************/
+//#define NFI_BASE                  (0x80032000)
+//#define NFIECC_BASE               (0x80038000)
+
+/******************************************************************************
+*
+* NFI Register Definition
+*
+******************************************************************************/
+
+#define NFI_CNFG_REG16              (NFI_BASE+0x0000)
+#define NFI_PAGEFMT_REG16           (NFI_BASE+0x0004)
+#define NFI_PAGEFMT_REG32           (NFI_BASE+0x0004)
+#define NFI_CON_REG16               (NFI_BASE+0x0008)
+#define NFI_CON_REG32               (NFI_BASE+0x0008)
+#define NFI_ACCCON_REG32            (NFI_BASE+0x000C)
+#define NFI_INTR_EN_REG32           (NFI_BASE+0x0010)
+#define NFI_INTR_REG16              (NFI_BASE+0x0014)
+
+#define NFI_CMD_REG16               (NFI_BASE+0x0020)
+
+#define NFI_ADDRNOB_REG16           (NFI_BASE+0x0030)
+#define NFI_COLADDR_REG32           (NFI_BASE+0x0034)
+#define NFI_ROWADDR_REG32           (NFI_BASE+0x0038)
+
+#define NFI_STRDATA_REG16           (NFI_BASE+0x0040)
+#define NFI_CNRNB_REG16             (NFI_BASE+0x0044)
+
+#define NFI_DATAW_REG32             (NFI_BASE+0x0050)
+#define NFI_DATAR_REG32             (NFI_BASE+0x0054)
+#define NFI_PIO_DIRDY_REG16         (NFI_BASE+0x0058)
+
+#define NFI_STA_REG32               (NFI_BASE+0x0060)
+#define NFI_FIFOSTA_REG16           (NFI_BASE+0x0064)
+//#define NFI_LOCKSTA_REG16           (NFI_BASE+0x0068)
+
+
+#define NFI_ADDRCNTR_REG16          (NFI_BASE+0x0070)
+#define NFI_ADDRCNTR_REG32          (NFI_BASE+0x0070)
+
+#define NFI_STRADDR_REG32           (NFI_BASE+0x0080)
+#define NFI_BYTELEN_REG16           (NFI_BASE+0x0084)
+#define NFI_BYTELEN_REG32           (NFI_BASE+0x0084)
+
+#define NFI_CSEL_REG16              (NFI_BASE+0x0090)
+#define NFI_IOCON_REG16             (NFI_BASE+0x0094)
+
+#define NFI_FDM0L_REG32             (NFI_BASE+0x00A0)
+#define NFI_FDM0M_REG32             (NFI_BASE+0x00A4)
+
+#define NFI_CRC01_REG32       		(NFI_BASE+0x0120)
+#define NFI_CRC23_REG32       		(NFI_BASE+0x0124)
+#define NFI_CRC45_REG32       		(NFI_BASE+0x0128)
+#define NFI_CRC67_REG32       		(NFI_BASE+0x012C)
+#define NFI_CRC89_REG32       		(NFI_BASE+0x0130)
+#define NFI_CRCAB_REG32       		(NFI_BASE+0x0134)
+#define NFI_CRCCD_REG32       		(NFI_BASE+0x0138)
+#define NFI_CRCEF_REG32       		(NFI_BASE+0x013C)
+
+#define NFI_FIFODATA0_REG32         (NFI_BASE+0x0190)
+#define NFI_FIFODATA1_REG32         (NFI_BASE+0x0194)
+#define NFI_FIFODATA2_REG32         (NFI_BASE+0x0198)
+#define NFI_FIFODATA3_REG32         (NFI_BASE+0x019C)
+
+#define NFI_DEBUG_CON1_REG16 		(NFI_BASE+0x0220)
+#define NFI_MASTERSTA_REG16         (NFI_BASE+0x0224)
+#define NFI_MASTERRST_REG32			(NFI_BASE+0x0228)
+#define NFI_SPIDMA_REG32            (NFI_BASE+0x022C)
+
+#define NFI_RANDOM_CNFG_REG32 		(NFI_BASE+0x0238)
+#define NFI_ENEMPTY_THRESH          (NFI_BASE+0x023C)
+#define NFI_NAND_TYPE_CNFG_REG32 	(NFI_BASE+0x0240)
+#define NFI_ACCCON1_REG32    		(NFI_BASE+0x0244)
+#define NFI_DLYCTRL_REG32    		(NFI_BASE+0x0248)
+
+#define NFI_RANDOM_TSB_SEED0    	(NFI_BASE+0x024C)
+#define NFI_RANDOM_TSB_SEED15   	(NFI_BASE+0x0290)
+
+#define NFI_TLC_RD_WHR2_REG16      	((volatile P_U16)(NFI_BASE+0x0300))
+#define NFI_DQS_HIGH_SET        	(NFI_BASE+0x0304)
+#define NFI_DQS_CMP_MODE        	(NFI_BASE+0x0308)
+
+#define NFI_DQS_DELAY_SEL_SHIFT 16
+#define NFI_DQS_DELAY_MUX_SHIFT 4
+
+#define NFI_FLUSH_REG32    ((volatile P_U32)(NFI_BASE+0x0490))
+
+
+/******************************************************************************
+*
+* NFI Clock Register Definition
+*
+******************************************************************************/
+
+#define MT_CLKMUX_NFI_INFRA_UPD     ((volatile P_U32)(0x10000000+0x0004))
+#define MT_CLKMUX_NFI_INFRA_SEL     ((volatile P_U32)(0x10000000+0x00B0))
+#define HF_FNFI2X_CK_UPDATE_SHIFT   28
+#define HF_FNFIECC_CK_UPDATE_SHIFT  29
+
+#define PDN_NFIECC_SHIFT            23
+#define CLK_NFIECC_INV_SHIFT        20
+#define CLK_NFIECC_SEL_SHIFT        16    // 18:16
+
+#define PDN_NFI2X_SHIFT             15
+#define CLK_NFI2X_INV_SHIFT         12
+#define CLK_NFI2X_SEL_SHIFT         8     // 10:8
+
+
+/******************************************************************************
+*
+* NFI Clock Register Field Definition
+*
+******************************************************************************/
+
+#define CLK_NFI_CLOCK_ON            0
+#define CLK_NFI_CLOCK_OFF           1
+
+#define CLK_NFI_CLK_MASK            7
+
+#define CLK_NFIECC_CLK_26M          0
+#define CLK_NFIECC_CLK_78M          1
+#define CLK_NFIECC_CLK_104M         2
+#define CLK_NFIECC_CLK_156M         3
+#define CLK_NFIECC_CLK_312M         4
+#define CLK_NFIECC_CLK_273M         5
+#define CLK_NFIECC_CLK_208M         6
+#define CLK_NFIECC_CLK_218M         7
+
+#define CLK_NFI2X_CLK_26M           0
+#define CLK_NFI2X_CLK_182M          1
+#define CLK_NFI2X_CLK_156M          2
+#define CLK_NFI2X_CLK_364M          3
+#define CLK_NFI2X_CLK_91M           4
+#define CLK_NFI2X_CLK_200M          5
+#define CLK_NFI2X_CLK_312M          6
+#define CLK_NFI2X_CLK_250M          7
+
+/******************************************************************************
+*
+* NFI Register Field Definition
+*
+******************************************************************************/
+
+/* NFI_SPIDMA_REG32 */
+#define SPIDMA_SEC_EN               (0x00010000)
+#define SPIDMA_SEC_SIZE_MASK        (0x0000FFFF)
+
+/* NFI_CNFG */
+#define CNFG_AHB                    (0x0001)
+#define CNFG_READ_EN                (0x0002)
+#define CNFG_AHB_BURST_EN           (0x0004)
+#define CNFG_BYTE_RW                (0x0040)
+#define CNFG_HW_ECC_EN              (0x0100)
+#define CNFG_AUTO_FMT_EN            (0x0200)
+#define CNFG_OP_IDLE                (0x0000)
+#define CNFG_OP_READ                (0x1000)
+#define CNFG_OP_SRD                 (0x2000)
+#define CNFG_OP_PRGM                (0x3000)
+#define CNFG_OP_ERASE               (0x4000)
+#define CNFG_OP_RESET               (0x5000)
+#define CNFG_OP_CUST                (0x6000)
+
+#define CNFG_OP_MODE_MASK           (0x7000)
+#define CNFG_OP_MODE_SHIFT          (12)
+
+/* NFI_CON */
+#define CON_FIFO_FLUSH              (0x0001)
+#define CON_NFI_RST                 (0x0002)
+#define CON_NFI_SRD                 (0x0010)
+
+#define CON_NOB_MASK                (0x00E0)
+#define CON_NOB_SHIFT               (5)
+
+#define CON_NFI_BRD                 (0x0100)
+#define CON_NFI_BWR                 (0x0200)
+
+#define CON_SEC_NUM_MASK            (0x1F000)
+#define CON_NFI_SEC_SHIFT           (12)
+
+
+#define SEED_MASK             (0x7FFF)
+#define EN_SEED_SHIFT		  (0x1)
+#define DE_SEED_SHIFT		  (0x11)
+#define CNFG_RAN_SEC		 (0x0010)
+#define CNFG_RAN_SEL		 (0x0020)
+
+
+/* NFI_INTR_EN */
+#define RD_DONE_EN                  (0x0001)
+#define WR_DONE_EN                  (0x0002)
+#define RST_DONE_EN                 (0x0004)
+#define ERASE_DONE_EN               (0x0008)
+#define BSY_RTN_EN                  (0x0010)
+#define ACC_LOCK_EN                 (0x0020)
+#define AHB_DONE_EN                 (0x0040)
+#define ALL_INTR_DE                 (0x0000)
+#define ALL_INTR_EN                 (0x007F)
+
+/* NFI_INTR */
+#define RD_COMPLETE                 (0x0001)
+#define WR_COMPLETE                 (0x0002)
+#define RESET_COMPLETE              (0x0004)
+#define ERASE_COMPLETE              (0x0008)
+#define BUSY_RETURN                 (0x0010)
+#define ACCESS_LOCK_LOCK            (0x0020)
+#define AHB_DONE                    (0x0040)
+
+/* NFI_ADDRNOB */
+#define ADDR_COL_NOB_MASK           (0x0007)
+#define ADDR_COL_NOB_SHIFT          (0)
+//#define ADDR_ROW_NOB_MASK           (0x0070)
+#define ADDR_ROW_NOB_SHIFT          (4)
+
+/* NFI_FIFO */
+#define FIFO_RD_EMPTY               (0x0040)
+#define FIFO_RD_FULL                (0x0080)
+#define FIFO_WR_FULL                (0x8000)
+#define FIFO_WR_EMPTY               (0x4000)
+#define FIFO_RD_REMAIN(x)           (0x1F&(x))
+#define FIFO_WR_REMAIN(x)           ((0x1F00&(x))>>8)
+
+/* NFI_ADDRCNTR */
+#define ADDRCNTR_CNTR(x)            ((0x1F000&(x))>>12)
+#define ADDRCNTR_OFFSET(x)          (0x0FFF&(x))
+
+/* NFI_LOCK */
+#define NFI_LOCK_ON                 (0x0001)
+
+/* NFI_LOCKANOB */
+#define PROG_RADD_NOB_MASK          (0x7000)
+#define PROG_RADD_NOB_SHIFT         (12)
+#define PROG_CADD_NOB_MASK          (0x0300)
+#define PROG_CADD_NOB_SHIFT         (8)
+#define ERASE_RADD_NOB_MASK         (0x0070)
+#define ERASE_RADD_NOB_SHIFT        (4)
+#define ERASE_CADD_NOB_MASK         (0x0007)
+#define ERASE_CADD_NOB_SHIFT        (0)
+
+/* Nand flash command */
+#define RD_1ST_CMD                  0x00
+#define RANDOM_RD_1ST_CMD           0x05
+#define RD_2ND_HALF_CMD             0x01    // only for 512 bytes page-size
+#define RD_SPARE_CMD                0x50    // only for 512 bytes page-size
+#define RD_2ND_CYCLE_CMD            0x30    // only for 2K  bytes page-size
+#define RANDOM_RD_2ND_CMD           0xE0
+#define RD_FOR_COPYBACK             0x35
+#define COPY_1ST_CMD                0x85
+#define COPY_2ND_CMD                0x10
+#define COPY_PROGRAM                0x8A
+#define INPUT_DATA_CMD              0x80
+#define PLANE_INPUT_DATA_CMD        0x81
+#define RANDOM_INPUT_DATA_CMD       0x85
+#define PROG_DATA_CMD               0x10
+#define PLANE_PROG_DATA_CMD         0x11
+#define CACHE_PROG_CMD              0x15
+#define BLOCK_ERASE1_CMD            0x60
+#define BLOCK_ERASE2_CMD            0xD0
+#define RD_ID_CMD                   0x90
+#define RD_STATUS_CMD               0x70
+#define RESET_CMD                   0xFF
+
+/* NFI_PAGEFMT */
+#define PAGEFMT_512                 (0x0000)
+#define PAGEFMT_2K                  (0x0001)
+#define PAGEFMT_4K                  (0x0002)
+#define PAGEFMT_2K_1KS       (0x0000)
+#define PAGEFMT_4K_1KS       (0x0001)
+#define PAGEFMT_8K_1KS       (0x0002)
+#define PAGEFMT_16K_1KS      (0x0003)
+
+#define PAGEFMT_PAGE_MASK           (0x0003)
+
+#define PAGEFMT_SEC_SEL_512         (0x0004)
+#define PAGEFMT_SECTOR_SEL          (0x0004)
+
+#define PAGEFMT_DBYTE_EN            (0x0008)
+
+#define PAGEFMT_SPARE_16            (0x0000)
+#define PAGEFMT_SPARE_26            (0x0001)
+#define PAGEFMT_SPARE_27            (0x0002)
+#define PAGEFMT_SPARE_28            (0x0003)
+#define PAGEFMT_SPARE_32            (0x0004)
+#define PAGEFMT_SPARE_36     (0x0005)
+#define PAGEFMT_SPARE_40     (0x0006)
+#define PAGEFMT_SPARE_44     (0x0007)
+#define PAGEFMT_SPARE_48     (0x0008)
+#define PAGEFMT_SPARE_49     (0x0009)
+#define PAGEFMT_SPARE_50     (0x000A)
+#define PAGEFMT_SPARE_51     (0x000B)
+#define PAGEFMT_SPARE_52     (0x000C)
+#define PAGEFMT_SPARE_62     (0x000D)
+#define PAGEFMT_SPARE_61     (0x000E)
+#define PAGEFMT_SPARE_63     (0x000F)
+#define PAGEFMT_SPARE_64     (0x0010)
+#define PAGEFMT_SPARE_67     (0x0011)
+#define PAGEFMT_SPARE_74     (0x0012)
+
+#define PAGEFMT_SPARE_32_1KS (0x0000)
+#define PAGEFMT_SPARE_52_1KS (0x0001)
+#define PAGEFMT_SPARE_54_1KS (0x0002)
+#define PAGEFMT_SPARE_56_1KS (0x0003)
+#define PAGEFMT_SPARE_64_1KS (0x0004)
+#define PAGEFMT_SPARE_72_1KS (0x0005)
+#define PAGEFMT_SPARE_80_1KS (0x0006)
+#define PAGEFMT_SPARE_88_1KS (0x0007)
+#define PAGEFMT_SPARE_96_1KS (0x0008)
+#define PAGEFMT_SPARE_98_1KS (0x0009)
+#define PAGEFMT_SPARE_100_1KS (0x000A)
+#define PAGEFMT_SPARE_102_1KS (0x000B)
+#define PAGEFMT_SPARE_104_1KS (0x000C)
+#define PAGEFMT_SPARE_124_1KS (0x000D)
+#define PAGEFMT_SPARE_122_1KS (0x000E)
+#define PAGEFMT_SPARE_126_1KS (0x000F)
+#define PAGEFMT_SPARE_128_1KS (0x0010)
+#define PAGEFMT_SPARE_134_1KS (0x0011)
+#define PAGEFMT_SPARE_148_1KS (0x0012)
+
+#define PAGEFMT_SPARE_MASK          (0x1F0000)
+#define PAGEFMT_SPARE_SHIFT         (16)
+
+#define PAGEFMT_FDM_MASK            (0x0F00)
+#define PAGEFMT_FDM_SHIFT           (8)
+
+#define PAGEFMT_FDM_ECC_MASK        (0xF000)
+#define PAGEFMT_FDM_ECC_SHIFT       (12)
+
+/* NFI_MASTERSTA */
+#define MASTERSTA_MASK              (0x0FFF)
+
+/* NFI_DEBUG_CON1 */
+#define HWDCM_SWCON_EN        (1<<0)
+#define HWDCM_SWCON_ON        (1<<1)
+#define WBUF_EN               (1<<2)
+#define HWDCM_SWCON_EN_VAL    (1<<7)
+#define AUTOC_HPROT_EN        (1<<8)
+#define NFI_ECC_CLK_EN        (1<<11)
+#define REG_CE_HOLD           (1<<14)
+#define NFI_BYPASS            (1<<15)
+
+#define ECC_BYPASS        0x1
+#define PAD_MACRO_RST     2
+
+/*NFI_TLC_RD_WHR2_REG16 */
+#define TLC_RD_WHR2_LAT_MASK (0xFFF)
+#define TLC_RD_WHR2_EN (0x1000)
+/******************************************************************************
+*
+* ECC Register Definition
+*
+*******************************************************************************/
+#define ECC_ENCCON_REG16    ((volatile P_U16)(NFIECC_BASE+0x0000))
+#define ECC_ENCCNFG_REG32   ((volatile P_U32)(NFIECC_BASE+0x0004))
+#define ECC_ENCDIADDR_REG32 ((volatile P_U32)(NFIECC_BASE+0x0008))
+#define ECC_ENCIDLE_REG32   ((volatile P_U32)(NFIECC_BASE+0x000C))
+#define ECC_ENCPAR0_REG32   ((volatile P_U32)(NFIECC_BASE+0x0010))
+#define ECC_ENCPAR1_REG32   ((volatile P_U32)(NFIECC_BASE+0x0014))
+#define ECC_ENCPAR2_REG32   ((volatile P_U32)(NFIECC_BASE+0x0018))
+#define ECC_ENCPAR3_REG32   ((volatile P_U32)(NFIECC_BASE+0x001C))
+#define ECC_ENCPAR4_REG32   ((volatile P_U32)(NFIECC_BASE+0x0020))
+#define ECC_ENCPAR5_REG32   ((volatile P_U32)(NFIECC_BASE+0x0024))
+#define ECC_ENCPAR6_REG32   ((volatile P_U32)(NFIECC_BASE+0x0028))
+#define ECC_ENCSTA_REG32    ((volatile P_U32)(NFIECC_BASE+0x007C))
+#define ECC_ENCIRQEN_REG16  ((volatile P_U16)(NFIECC_BASE+0x0080))
+#define ECC_ENCIRQSTA_REG16 ((volatile P_U16)(NFIECC_BASE+0x0084))
+
+#define ECC_DECCON_REG16    ((volatile P_U16)(NFIECC_BASE+0x0100))
+#define ECC_DECCNFG_REG32   ((volatile P_U32)(NFIECC_BASE+0x0104))
+#define ECC_DECDIADDR_REG32 ((volatile P_U32)(NFIECC_BASE+0x0108))
+#define ECC_DECIDLE_REG16   ((volatile P_U16)(NFIECC_BASE+0x010C))
+#define ECC_DECFER_REG16    ((volatile P_U16)(NFIECC_BASE+0x0110))
+#define ECC_DECENUM0_REG32   ((volatile P_U32)(NFIECC_BASE+0x0114))
+#define ECC_DECENUM1_REG32   ((volatile P_U32)(NFIECC_BASE+0x0118))
+#define ECC_DECDONE_REG16   ((volatile P_U16)(NFIECC_BASE+0x0124))
+#define ECC_DECEL0_REG32    ((volatile P_U32)(NFIECC_BASE+0x0128))
+#define ECC_DECEL1_REG32    ((volatile P_U32)(NFIECC_BASE+0x012C))
+#define ECC_DECEL2_REG32    ((volatile P_U32)(NFIECC_BASE+0x0130))
+#define ECC_DECEL3_REG32    ((volatile P_U32)(NFIECC_BASE+0x0134))
+#define ECC_DECEL4_REG32    ((volatile P_U32)(NFIECC_BASE+0x0138))
+#define ECC_DECEL5_REG32    ((volatile P_U32)(NFIECC_BASE+0x013C))
+#define ECC_DECEL6_REG32    ((volatile P_U32)(NFIECC_BASE+0x0140))
+#define ECC_DECEL7_REG32    ((volatile P_U32)(NFIECC_BASE+0x0144))
+#define ECC_DECIRQEN_REG16  ((volatile P_U16)(NFIECC_BASE+0x0200))
+#define ECC_DECIRQSTA_REG16 ((volatile P_U16)(NFIECC_BASE+0x0204))
+//#define ECC_FDMADDR_REG32   ((volatile P_U32)(NFIECC_BASE+0x0148))
+#define ECC_DECFSM_REG32    ((volatile P_U32)(NFIECC_BASE+0x0208))
+#define ECC_BYPASS_REG32    ((volatile P_U32)(NFIECC_BASE+0x020C))
+
+//#define ECC_SYNSTA_REG32    ((volatile P_U32)(NFIECC_BASE+0x0150))
+//#define ECC_DECNFIDI_REG32  ((volatile P_U32)(NFIECC_BASE+0x0154))
+//#define ECC_SYN0_REG32      ((volatile P_U32)(NFIECC_BASE+0x0158))
+
+/******************************************************************************
+*
+* ECC register definition
+*
+*******************************************************************************
+/
+/* ECC_ENCON */
+#define ECC_PARITY_BIT          (14)
+
+#define ENC_EN                  (0x0001)
+#define ENC_DE                  (0x0000)
+
+/* ECC_ENCCNFG */
+#define ECC_CNFG_ECC4           (0x0000)
+#define ECC_CNFG_ECC6           (0x0001)
+#define ECC_CNFG_ECC8           (0x0002)
+#define ECC_CNFG_ECC10          (0x0003)
+#define ECC_CNFG_ECC12         (0x0004)
+#define ECC_CNFG_ECC14         (0x0005)
+#define ECC_CNFG_ECC16         (0x0006)
+#define ECC_CNFG_ECC18         (0x0007)
+#define ECC_CNFG_ECC20         (0x0008)
+#define ECC_CNFG_ECC22         (0x0009)
+#define ECC_CNFG_ECC24         (0x000A)
+#define ECC_CNFG_ECC28         (0x000B)
+#define ECC_CNFG_ECC32         (0x000C)
+#define ECC_CNFG_ECC36         (0x000D)
+#define ECC_CNFG_ECC40         (0x000E)
+#define ECC_CNFG_ECC44         (0x000F)
+#define ECC_CNFG_ECC48         (0x0010)
+#define ECC_CNFG_ECC52         (0x0011)
+#define ECC_CNFG_ECC56         (0x0012)
+#define ECC_CNFG_ECC60         (0x0013)
+#define ECC_CNFG_ECC68         (0x0014)
+#define ECC_CNFG_ECC72         (0x0015)
+#define ECC_CNFG_ECC80         (0x0016)
+
+#define ECC_CNFG_ECC_MASK      	(0x0000001F)
+
+#define ENC_CNFG_NFI           	(0x0020)
+#define ENC_CNFG_MODE_MASK     	(0x0060)
+
+#define ENC_CNFG_META6          (0x10300000)
+#define ENC_CNFG_META8          (0x10400000)
+
+#define ENC_CNFG_MSG_MASK  	(0x3FFF0000)
+#define ENC_CNFG_MSG_SHIFT      (0x10)
+
+/* ECC_ENCIDLE */
+#define ENC_IDLE                (0x0001)
+
+/* ECC_ENCSTA */
+#define STA_FSM            	(0x0007)
+#define STA_COUNT_PS            (0xFF10)
+#define STA_COUNT_MS            (0x3FFF0000)
+
+/* ECC_ENCIRQEN */
+#define ENC_IRQEN               (0x0001)
+
+/* ECC_ENCIRQSTA */
+#define ENC_IRQSTA              (0x0001)
+
+/* ECC_DECCON */
+#define DEC_EN                  (0x0001)
+#define DEC_DE                  (0x0000)
+
+/* ECC_ENCCNFG */
+#define DEC_CNFG_ECC4          (0x0000)
+#define DEC_CNFG_ECC6          (0x0001)
+#define DEC_CNFG_ECC12         (0x0002)
+
+#define DEC_CNFG_DEC_MODE_MASK (0x0060)
+#define DEC_CNFG_AHB           (0x0000)
+#define DEC_CNFG_NFI           (0x0020)
+
+//#define DEC_CNFG_META6         (0x10300000)
+//#define DEC_CNFG_META8         (0x10400000)
+
+#define DEC_CNFG_FER           (0x01000)
+#define DEC_CNFG_EL            (0x02000)
+#define DEC_CNFG_CORRECT       (0x03000)
+#define DEC_CNFG_TYPE_MASK     (0x03000)
+
+#define DEC_CNFG_EMPTY_EN      (0x80000000)
+
+#define DEC_CNFG_CODE_MASK     (0x3FFF0000)
+#define DEC_CNFG_CODE_SHIFT    (0x10)
+
+/* ECC_DECIDLE */
+#define DEC_IDLE                (0x0001)
+
+/* ECC_DECFER */
+#define DEC_FER0               (0x0001)
+#define DEC_FER1               (0x0002)
+#define DEC_FER2               (0x0004)
+#define DEC_FER3               (0x0008)
+#define DEC_FER4               (0x0010)
+#define DEC_FER5               (0x0020)
+#define DEC_FER6               (0x0040)
+#define DEC_FER7               (0x0080)
+
+/* ECC_DECENUM */
+#define ERR_NUM0               (0x0000007F)
+#define ERR_NUM1               (0x00007F00)
+#define ERR_NUM2               (0x007F0000)
+#define ERR_NUM3               (0x7F000000)
+#define ERR_NUM4               (0x0000007F)
+#define ERR_NUM5               (0x00007F00)
+#define ERR_NUM6               (0x007F0000)
+#define ERR_NUM7               (0x7F000000)
+
+/* ECC_DECDONE */
+#define DEC_DONE0               (0x0001)
+#define DEC_DONE1               (0x0002)
+#define DEC_DONE2               (0x0004)
+#define DEC_DONE3               (0x0008)
+#define DEC_DONE4               (0x0010)
+#define DEC_DONE5               (0x0020)
+#define DEC_DONE6               (0x0040)
+#define DEC_DONE7               (0x0080)
+
+/* ECC_DECIRQEN */
+#define DEC_IRQEN               (0x0001)
+
+/* ECC_DECIRQSTA */
+#define DEC_IRQSTA              (0x0001)
+
+/******************************************************************************
+*
+* NFI Register Field Definition
+*
+*******************************************************************************/
+
+/* NFI_ACCCON */
+#define ACCCON_SETTING       ()
+
+/* NFI_INTR_EN */
+#define INTR_RD_DONE_EN      (0x0001)
+#define INTR_WR_DONE_EN      (0x0002)
+#define INTR_RST_DONE_EN     (0x0004)
+#define INTR_ERASE_DONE_EN   (0x0008)
+#define INTR_BSY_RTN_EN      (0x0010)
+#define INTR_ACC_LOCK_EN     (0x0020)
+#define INTR_AHB_DONE_EN     (0x0040)
+#define INTR_ALL_INTR_DE     (0x0000)
+#define INTR_ALL_INTR_EN     (0x007F)
+#define INTR_CUSTOM_PROG_DONE_INTR_EN    (0x00000080)
+#define INTR_AUTO_PROG_DONE_INTR_EN      (0x00000200)
+#define INTR_AUTO_BLKER_INTR_EN          (0x00000800)
+
+
+/* NFI_INTR */
+#define INTR_RD_DONE         (0x0001)
+#define INTR_WR_DONE         (0x0002)
+#define INTR_RST_DONE        (0x0004)
+#define INTR_ERASE_DONE      (0x0008)
+#define INTR_BSY_RTN         (0x0010)
+#define INTR_ACC_LOCK        (0x0020)
+#define INTR_AHB_DONE        (0x0040)
+
+/* NFI_ADDRNOB */
+//#define ADDR_COL_NOB_MASK    (0x0003)
+#define ADDR_COL_NOB_SHIFT   (0)
+//#define ADDR_ROW_NOB_MASK    (0x0030)
+#define ADDR_ROW_NOB_SHIFT   (4)
+
+/* NFI_STA */
+#define STA_READ_EMPTY       (0x00001000)
+#define STA_ACC_LOCK         (0x00000010)
+#define STA_CMD_STATE        (0x00000001)
+#define STA_ADDR_STATE       (0x00000002)
+#define STA_DATAR_STATE      (0x00000004)
+#define STA_DATAW_STATE      (0x00000008)
+#define STA_FLASH_MACRO_IDLE (0x00000020)
+
+#define STA_NAND_FSM_MASK    (0x1F000000)
+#define STA_NAND_BUSY        (0x00000100)
+#define STA_NAND_BUSY_RETURN (0x00000200)
+#define STA_NFI_FSM_MASK     (0x000F0000)
+#define STA_NFI_OP_MASK      (0x0000000F)
+
+/* NFI_FIFOSTA */
+#define FIFO_RD_EMPTY        (0x0040)
+#define FIFO_RD_FULL         (0x0080)
+#define FIFO_WR_FULL         (0x8000)
+#define FIFO_WR_EMPTY        (0x4000)
+#define FIFO_RD_REMAIN(x)    (0x1F&(x))
+#define FIFO_WR_REMAIN(x)    ((0x1F00&(x))>>8)
+
+/* NFI_ADDRCNTR */
+//#define ADDRCNTR_CNTR(x)     ((0xF000&(x))>>12)
+//#define ADDRCNTR_OFFSET(x)   (0x03FF&(x))
+
+/* NFI_LOCK */
+#define NFI_LOCK_ON          (0x0001)
+
+/* NFI_LOCKANOB */
+#define PROG_RADD_NOB_MASK   (0x7000)
+#define PROG_RADD_NOB_SHIFT  (12)
+#define PROG_CADD_NOB_MASK   (0x0300)
+#define PROG_CADD_NOB_SHIFT  (8)
+#define ERASE_RADD_NOB_MASK   (0x0070)
+#define ERASE_RADD_NOB_SHIFT  (4)
+#define ERASE_CADD_NOB_MASK   (0x0007)
+#define ERASE_CADD_NOB_SHIFT  (0)
+
+/******************************************************************************
+*
+* MTD command
+*
+******************************************************************************/
+#define NAND_CMD_READ0              0
+#define NAND_CMD_READ1              1
+#define NAND_CMD_PAGEPROG           0x10
+#define NAND_CMD_READOOB            0x50
+#define NAND_CMD_ERASE1             0x60
+#define NAND_CMD_STATUS             0x70
+#define NAND_CMD_SEQIN              0x80
+#define NAND_CMD_READID             0x90
+#define NAND_CMD_ERASE2             0xd0
+#define NAND_CMD_RESET              0xff
+#define NAND_CMD_READSTART          0x30
+#define NAND_CMD_CACHEDPROG         0x15
+#define NAND_CMD_DUMMYREAD          0x00
+#define NAND_CMD_DUMMYPROG          0x80
+#if defined(MTK_TLC_NAND_SUPPORT) // tlc command
+#define SET_SLC_MODE_CMD            0xA2
+#define LOW_PG_SELECT_CMD           0x01
+#define MID_PG_SELECT_CMD           0x02
+#define HIGH_PG_SELECT_CMD          0x03
+#define PROGRAM_1ST_CYCLE_CMD       0x09
+#define PROGRAM_2ND_CYCLE_CMD       0x0D
+#define CHANGE_COLUNM_ADDR_1ST_CMD  0x05
+#define CHANGE_COLUNM_ADDR_2ND_CMD  0xE0
+#define PROGRAM_LEFT_PLANE_CMD      0x11
+#define PROGRAM_RIGHT_PLANE_CMD     0x1A
+#define NOT_KEEP_ERASE_LVL_15NM_CMD 0xC6
+#define NOT_KEEP_ERASE_LVL_A19NM_CMD 0xDF
+#endif
+
+#if defined(MTK_TLC_NAND_SUPPORT)
+#define SLC_MODE_OP_FALI    (0x04)
+#endif
+
+/* Options */
+
+#define NAND_NO_AUTOINCR    0x00000001
+
+#define NAND_BUSW_16        0x00000002
+
+#define NAND_NO_PADDING     0x00000004
+
+#define NAND_CACHEPROGRAM   0x00000008
+
+#define NAND_COPYBACK       0x00000010
+
+#define NAND_IS_AND         0x00000020
+
+#define NAND_4PAGE_ARRAY    0x00000040
+
+#define NAND_SS_LOWPOWER_OPTIONS \
+    (NAND_NO_PADDING | NAND_CACHEPROGRAM | NAND_COPYBACK)
+
+#define _DEBUG_
+
+/* Debug message event */
+#define DBG_EVT_NONE        0x00000000  /* No event */
+#define DBG_EVT_ERR         0x00000001  /* DMA related event */
+#define DBG_EVT_CMD         0x00000002  /* NAND CMD related event */
+#define DBG_EVT_BAD         0x00000004  /* NAND BAD BLOCK handling event */
+#define DBG_EVT_INIT        0x00000008  /* NAND INT event */
+#define DBG_EVT_READ        0x00000010  /* NAND READ event */
+#define DBG_EVT_WRITE       0x00000020  /* NAND WRITE event */
+#define DBG_EVT_ERASE       0x00000040  /* NAND ERASE event */
+
+#define DBG_EVT_ALL         0xffffffff
+
+#define DBG_EVT_MASK       (DBG_EVT_INIT | DBG_EVT_BAD )
+
+#ifdef _DEBUG_
+#define MSG(evt, fmt, args...) \
+    do {    \
+    if ((DBG_EVT_##evt) & DBG_EVT_MASK) { \
+    print(fmt, ##args); \
+    } \
+    } while(0)
+
+#define MSG_FUNC_ENTRY(f)   MSG(FUC, "<FUN_ENT>: %s\n", __FUNCTION__)
+#else
+#define MSG(evt, fmt, args...) do{}while(0)
+#define MSG_FUNC_ENTRY(f)      do{}while(0)
+#define dbg_print(a,...)
+#endif
+
+struct nand_chip
+{
+    u32 page_shift;
+    u32 page_size;
+    char ChipID;                /* Type of DiskOnChip */
+    char *chips_name;
+    u64 chipsize;
+    unsigned long erasesize;
+    unsigned long mfr;          /* Flash IDs - only one type of flash per device */
+    unsigned long id;
+    char *name;
+    int numchips;
+    int oobblock;               /* Size of OOB blocks (e.g. 512) */
+    int oobsize;                /* Amount of OOB data per block (e.g. 16) */
+    int eccsize;
+    int bus16;
+    int nand_ecc_mode;
+    u32 sector_size;
+    u32 sector_shift;
+    u32 phys_erase_shift;
+    u32 nand_fdm_size;            /*FDM size, for 8163 tlc*/
+};
+
+struct nand_flash_device
+{
+    char *name;
+    int nand_id;
+    unsigned long page_size;
+    unsigned long chip_size;
+    unsigned long erase_size;
+    unsigned long options;
+};
+
+/**
+* struct nand_manufacturers - NAND Flash Manufacturer ID Structure
+* @name:    Manufacturer name
+* @id:      manufacturer ID code of device.
+*/
+#if 0
+struct nand_manufacturers
+{
+    int id;
+    char *name;
+};
+#endif
+/*
+struct nand_oobinfo
+{
+    u32 useecc;
+    u32 eccbytes;
+    u32 oobfree[8][2];
+    u32 eccpos[32];
+};
+*/
+
+struct nand_oobfree
+{
+    u32 offset;
+    u32 length;
+};
+
+#define MTD_MAX_OOBFREE_ENTRIES	16
+
+struct nand_ecclayout
+{
+    u32 eccbytes;
+    u32 eccpos[64];
+    u32 oobavail;
+    struct nand_oobfree oobfree[MTD_MAX_OOBFREE_ENTRIES];
+};
+
+/* ECC byte placement */
+#define MTD_NANDECC_OFF         0   /* Switch off ECC (Not recommended) */
+#define MTD_NANDECC_PLACE       1   /* Use the given placement in the structure (YAFFS1 legacy mode) */
+#define MTD_NANDECC_AUTOPLACE   2   /* Use the default placement scheme */
+#define MTD_NANDECC_PLACEONLY   3   /* Use the given placement in the structure (Do not store ecc result on read) */
+#define MTD_NANDECC_AUTOPL_USR  4   /* Use the given autoplacement scheme rather than using the default */
+
+/*
+* NAND Flash Manufacturer ID Codes
+*/
+#if 0
+#define NAND_MANFR_TOSHIBA  0x98
+#define NAND_MANFR_SAMSUNG  0xec
+#define NAND_MANFR_FUJITSU  0x04
+#define NAND_MANFR_NATIONAL 0x8f
+#define NAND_MANFR_RENESAS  0x07
+#define NAND_MANFR_STMICRO  0x20
+#define NAND_MANFR_HYNIX    0xad
+#define NAND_MANFR_MICRON   0x2c
+#define NAND_MANFR_AMD      0x01
+#endif
+/******************************************************************************
+*
+* NAND APIs
+*
+******************************************************************************/
+extern void nand_device_init(void);
+#endif
