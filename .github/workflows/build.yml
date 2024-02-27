@@ -1,0 +1,37 @@
+name: Build workflow
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lk-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v3
+    - name: Install pyhton2
+      run: sudo apt-get install python2
+    - name: Cache GCC for Android
+      id: cache-gcc
+      uses: actions/cache@v3
+      with:
+        path: ~/gcc-toolchain
+        key: gcc-toolchain
+    - name: Download GCC for Android
+      if: steps.cache-gcc.outputs.cache-hit != 'true'
+      run: |
+        git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 ~/gcc-toolchain
+        cd ~/gcc-toolchain
+        git checkout e9b2ab0932573a0ca90cad11ab75d9619f19c458
+    - name: Build the bootloader
+      run: |
+        export python=python2
+        MTK_PROJECT=X5 PRELOADER_OUT=`pwd`/build-X5 CROSS_COMPILE=~/gcc-toolchain/bin/arm-linux-androideabi- make
+    - name : Upload bootloader
+      uses: actions/upload-artifact@v3
+      with:
+        name: preloader_X5
+        path: /home/runner/work/preloader/preloader/build-X5/bin/preloader_X5.bin
