@@ -76,7 +76,7 @@ MTK_LOADER_BACKUP := yes
 # LOG_LEVEL_INFO       (3)
 # LOG_LEVEL_DEBUG      (4)
 # Any log messages with levels less than and equal to this will be printed.
-CFG_LOG_LEVEL :=3
+CFG_LOG_LEVEL :=5
 ###################################################################
 # image loading options
 ###################################################################
@@ -147,5 +147,5 @@ CFG_MBLOCK_LIB := 2
 
 # partition common driver support
 CFG_PARTITION_COMMON := 1
-CFG_LOG_STORE_SUPPORT :=1
-C_OPTION += -DLOG_STORE_SUPPORT
+CFG_LOG_STORE_SUPPORT :=0
+#C_OPTION += -DLOG_STORE_SUPPORT

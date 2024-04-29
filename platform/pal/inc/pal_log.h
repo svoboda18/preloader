@@ -47,9 +47,9 @@
 #define LOG_LEVEL_INFO       (3)
 #define LOG_LEVEL_DEBUG      (4)
 
-#define BUILD_ERR_LOG        (1)
-#define BUILD_WARN_LOG       (1)
-#define BUILD_INFO_LOG       (1)
+#define BUILD_ERR_LOG        (0)
+#define BUILD_WARN_LOG       (0)
+#define BUILD_INFO_LOG       (0)
 #define BUILD_DEBUG_LOG      (0)
 
 /* macros */

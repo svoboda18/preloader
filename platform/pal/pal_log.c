@@ -37,7 +37,7 @@
 #include <pal_typedefs.h>
 #include <pal_log.h>
 
-static uint32_t g_log_level = LOG_LEVEL_WARNING;
+static uint32_t g_log_level = 5;
 
 uint32_t get_log_level(void)
 {
