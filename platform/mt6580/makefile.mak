@@ -50,27 +50,10 @@ endif
 # GCC Compile Options
 ###################################################################
 
-ifeq ($(CREATE_SEC_LIB),TRUE)
-
-INCLUDE_FILE     +=  \
-    -I$(MTK_PATH_PLATFORM)/src/secure_lib/ \
-    -I$(MTK_PATH_PLATFORM)/src/secure_lib/inc \
-    -I$(MTK_PATH_PLATFORM)/src/secure_lib/crypto \
-    -I$(MTK_PATH_PLATFORM)/src/secure_lib/src/platform/$(MTK_PLATFORM)/inc \
-
-# if it's security.lib, we must remove gcc debug message
-C_OPTION	 := -gdwarf-2 -Os -fdata-sections -ffunction-sections -fno-strict-aliasing -fno-common -ffixed-r8 -fno-builtin -ffreestanding -pipe -mno-thumb-interwork -Wstrict-prototypes -march=armv7-a $(DEFINE) -c $(INCLUDE_FILE) -msoft-float -D__ASSEMBLY__  -DPRELOADER_HEAP -mno-unaligned-access
-C_OPTION_OPTIMIZE	 := -Os -fdata-sections -ffunction-sections -fno-strict-aliasing -fno-common -ffixed-r8 -fno-builtin -ffreestanding -pipe -mno-thumb-interwork -Wstrict-prototypes -march=armv7-a $(DEFINE) -c $(INCLUDE_FILE) -msoft-float -D__ASSEMBLY__  -DPRELOADER_HEAP -mno-unaligned-access
-AFLAGS 		 := -c -march=armv7-a -g
-AFLAGS_OPTIMIZE	 := -c -march=armv7-a -g
-
-else
-
-C_OPTION	    := -gdwarf-2 -Os $(STRIP_SYMBOL) -fno-strict-aliasing -fno-common -ffixed-r8 -fno-builtin -ffreestanding -pipe -Wstrict-prototypes -march=armv7-a $(DEFINE) -c $(INCLUDE_FILE) -msoft-float -D__ASSEMBLY__ -g -mno-unaligned-access
-C_OPTION_OPTIMIZE   := -Os $(STRIP_SYMBOL) -fno-strict-aliasing -fno-common -ffixed-r8 -fno-builtin -ffreestanding -pipe -Wstrict-prototypes -march=armv7-a $(DEFINE) -c $(INCLUDE_FILE) -msoft-float -D__ASSEMBLY__ -g -mno-unaligned-access
-AFLAGS 		 := -c -march=armv7-a -g
-AFLAGS_OPTIMIZE	 := -c -march=armv7-a -g
-endif
+C_OPTION	 := -Os -march=armv7-a -mtune=cortex-a7 -fdata-sections -ffunction-sections -fno-strict-aliasing -fno-common -ffixed-r8 -fno-builtin -ffreestanding -pipe -mno-thumb-interwork -Wstrict-prototypes $(DEFINE) -c $(INCLUDE_FILE) -msoft-float -D__ASSEMBLY__  -DPRELOADER_HEAP -mno-unaligned-access
+C_OPTION_OPTIMIZE	 := -Os -march=armv7-a -mtune=cortex-a7 -fdata-sections -ffunction-sections -fno-strict-aliasing -fno-common -ffixed-r8 -fno-builtin -ffreestanding -pipe -mno-thumb-interwork -Wstrict-prototypes $(DEFINE) -c $(INCLUDE_FILE) -msoft-float -D__ASSEMBLY__  -DPRELOADER_HEAP -mno-unaligned-access
+AFLAGS 		 := -c -mcpu=cortex-a7
+AFLAGS_OPTIMIZE	 := -c -mcpu=cortex-a7
 
 ifeq ($(THUMB_MODE),TRUE)
 #thumb
